@@ -66,9 +66,9 @@ function create()
 	}
 }
 
-function moveBotToHex(hexNumber)
+function moveBotToHex(botType , hexNumber)
 {
-	switch(botCurrentlyPointingAt.botType)
+	switch(botType)
 	{
 		case botColor.BLUE:
 			board.hexOfBlueBot = hexNumber;
@@ -86,11 +86,12 @@ function moveBotToHex(hexNumber)
 			console.log("SHOULD NOT HAPPEN");
 	}
 	let position = getPositionToPutBotForHex(hexNumber);
-	botCurrentlyPointingAt.x = (position.x * SIZE_OF_HEX_IN_PIXELS) + 4;
-	botCurrentlyPointingAt.y = (position.y * SIZE_OF_HEX_IN_PIXELS) +4;
-	resetHighlightsAndClickActionsOfHexes();
-	setHighlightsAndMoveActionsForNewPosition(botCurrentlyPointingAt);
+	let bot = botTypeToGameObjectMap.get(botType);
 
+	bot.x = (position.x * SIZE_OF_HEX_IN_PIXELS) + 4;
+	bot.y = (position.y * SIZE_OF_HEX_IN_PIXELS) +4;
+	resetHighlightsAndClickActionsOfHexes();
+	setHighlightsAndMoveActionsForNewPosition(botType);
 }
 
 function getCenterOfHex(hex)
@@ -129,21 +130,13 @@ function resetOnClickOfBoardHexes()
 	}
 }
 
+var botTypeToGameObjectMap = new Map();
+
 function createBot(hexOfBot , botName)
 {
 	let position = getPositionToPutBotForHex(hexOfBot);
 	let bot = this.add.sprite((position.x * 32) + 4 , (position.y * 32)+4 , botName).setOrigin(0,0).setInteractive();
-
-	/*
-	this.input.setDraggable(bot);
-
-	this.input.on('drag', function (pointer, gameObject, dragX, dragY) {
-
-		gameObject.x = dragX;
-		gameObject.y = dragY;
-
-	});
-	*/
+	botTypeToGameObjectMap.set(botName , bot);
 
 	bot.on('pointerdown' , function(pointer) 
 		{
@@ -160,7 +153,7 @@ function createBot(hexOfBot , botName)
 			this.setTint(0x00ff00);
 			botCurrentlyPointingAt = this;
 			this.botType = botName;
-			setHighlightsAndMoveActionsForNewPosition(this);
+			setHighlightsAndMoveActionsForNewPosition(botName);
 		});
 }
 
@@ -170,9 +163,25 @@ function resetHighlightsAndClickActionsOfHexes()
 	resetOnClickOfBoardHexes();
 }
 
-function setHighlightsAndMoveActionsForNewPosition(bot)
+function BotMovementDelta(botColor , position)
 {
-	let botPosition = getBotPosition(bot.botType);
+	this.botColor = botColor;
+	this.position = position;
+}
+
+function undoLastMove()
+{
+	let delta = deltaMovements.pop();
+	if(delta)
+	{
+		moveBotToHex(delta.botColor , delta.position);
+	}
+}
+
+var deltaMovements = []
+function setHighlightsAndMoveActionsForNewPosition(botType)
+{
+	let botPosition = getBotPosition(botType);
 	let hexesForHighlightLeft = createAvailableMovesForBotOnHexHorizontally(botPosition , -1);
 	let hexesForHighlightRight = createAvailableMovesForBotOnHexHorizontally(botPosition , 1);
 	let hexesForHighlightDown = createAvailableMovesForBotOnHexVertically(botPosition , 16);
@@ -193,22 +202,26 @@ function setHighlightsAndMoveActionsForNewPosition(bot)
 				{
 					if(botPosition < numberOfHex)
 					{
-						moveBotToHex(maxInRow);
+						deltaMovements.push(new BotMovementDelta(botType , botPosition));
+						moveBotToHex(botType , maxInRow); //Right movement
 					}
 					else
 					{
-						moveBotToHex(minInRow);
+						deltaMovements.push(new BotMovementDelta(botType , botPosition));
+						moveBotToHex(botType , minInRow); //Left Movement
 					}
 				}
 				else
 				{
 					if(botPosition < numberOfHex)
 					{
-						moveBotToHex(maxInColumn);
+						deltaMovements.push(new BotMovementDelta(botType , botPosition));
+						moveBotToHex(botType , maxInColumn); //Down movement
 					}
 					else
 					{
-						moveBotToHex(minInColumn);
+						deltaMovements.push(new BotMovementDelta(botType , botPosition));
+						moveBotToHex(botType , minInColumn); //Up movement
 					}
 				}
 			});
