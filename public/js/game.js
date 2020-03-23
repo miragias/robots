@@ -285,15 +285,12 @@ function createAvailableMovesForBotOnHexVertically(hex , iterator)
 {
 	let hexesToHighlight = [];
 
-	if(boardLogic.checkWalls(hex , hex + iterator))
-	{
-		return hexesToHighlight;
-	}
+	if(boardLogic.checkWalls(hex, hex + iterator) || checkBotOnNextHex(hex + iterator)) return hexesToHighlight;
 
 	for(i = hex+iterator; i < board.width * board.height && i >= 0; i+= iterator)
 	{
 		hexesToHighlight.push(i);
-		if(boardLogic.checkWalls(i , i + iterator))
+		if(boardLogic.checkWalls(i , i + iterator)|| checkBotOnNextHex(i+iterator))
 		{
 			break;
 		}
@@ -306,20 +303,25 @@ function createAvailableMovesForBotOnHexHorizontally(hex , iterator)
 	let rowInfo = getRowInfo(hex);
 	let hexesToHighlight = [];
 
-	if(boardLogic.checkWalls(hex , hex + iterator))
-	{
-		return hexesToHighlight;
-	}
+	if(boardLogic.checkWalls(hex, hex + iterator) || checkBotOnNextHex(hex + iterator)) return hexesToHighlight;
 
 	for(i = hex+iterator; i >= rowInfo.leftMostOfRow && i < rowInfo.rightMostOfRow; i+= iterator)
 	{
 		hexesToHighlight.push(i);
-		if(boardLogic.checkWalls(i , i + iterator))
+		if(boardLogic.checkWalls(i , i + iterator) || checkBotOnNextHex(i+iterator))
 		{
 			break;
 		}
 	}
 	return hexesToHighlight;
+}
+
+function checkBotOnNextHex(hexToMove)
+{
+	return (hexToMove == board.hexOfBlueBot 
+		|| hexToMove == board.hexOfRedBot
+		|| hexToMove == board.hexOfYellowBot
+		|| hexToMove == board.hexOfGreenBot);
 }
 
 function getRowInfo(hex)
